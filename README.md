@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Receipt → Notion Expense Uploader
 
-## Getting Started
+A web application that processes receipt images using OCR and automatically uploads expenses to a Notion database.
 
-First, run the development server:
+## Setup
+
+1. Clone the repository
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create a `.env.local` file with the following variables:
+```
+NOTION_TOKEN=your_notion_integration_token
+NOTION_DATABASE_ID=your_notion_database_id
+# Optional:
+OPENAI_API_KEY=your_openai_api_key
+```
+
+### Getting Notion Credentials
+
+1. Create a new integration at https://www.notion.so/my-integrations
+2. Copy the integration token
+3. Create a new database in Notion with these properties:
+   - Expense (Title)
+   - #amount (Number)
+   - category (Select with options: entertainment, groceries, food&drink, housing, transport)
+   - date (Date)
+4. Share your database with the integration
+5. Copy the database ID from the URL (the part after the workspace name and before the ?)
+
+## Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Drag & drop interface for receipt images
+- OCR text extraction with Tesseract.js
+- Smart parsing of common receipt fields
+- Batch processing support
+- Real-time editing before upload
+- Direct sync with Notion database
 
-## Learn More
+## Swapping OCR Provider
 
-To learn more about Next.js, take a look at the following resources:
+The OCR implementation is pluggable. To use a different provider:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Create a new implementation in `src/lib/ocr/`
+2. Implement the `extractTextFromImage` interface
+3. Update the import in `src/api/extract/route.ts`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Contributing
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request
