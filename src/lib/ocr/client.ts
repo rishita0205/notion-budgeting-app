@@ -1,5 +1,5 @@
 import { ExpenseItem } from '../../types/expense';
-import OpenAI from 'openai';
+// import OpenAI from 'openai';  // removed, now using Hugging Face inference API
 
 export type OcrProgressCallback = (progress: { status: string; progress: number }) => void;
 
@@ -11,19 +11,39 @@ export async function extractTextFromImage(
   try {
     console.log('🤖 Starting AI parsing of image...');
     if (onProgress) onProgress({ status: 'starting', progress: 0 });
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const aiResponse = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: 'You are an assistant that extracts expense details from an image. Provide JSON with: expense (string), amount (number), category (string).' },
-        { role: 'user', content: `Base64 image: ${imageData}` }
-      ]
-    });
+    // ensure API key is set
+    if (!process.env.HUGGINGFACE_API_KEY) {
+      throw new Error('Missing HUGGINGFACE_API_KEY in environment');
+    }
+    // Call Hugging Face flan-t5-small endpoint (free inference API)
+  const response = await fetch(
+      'https://api-inference.huggingface.co/models/google/flan-t5-small',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          inputs: `Extract expense (string), amount (number), category (string) from Base64 image: ${imageData}. Output valid JSON.`
+        })
+      }
+    );
+    // surface HTTP errors
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Hugging Face inference error ${response.status}: ${text}`);
+    }
     if (onProgress) onProgress({ status: 'ai_complete', progress: 100 });
-    const aiContent = aiResponse.choices?.[0]?.message?.content || '';
+    const hfResult = await response.json();
+    const aiContent =
+      hfResult.generated_text || (Array.isArray(hfResult) ? hfResult[0]?.generated_text : '') || '';
     console.log('✅ AI response content:', aiContent);
-    const parsed = JSON.parse(aiContent) as ExpenseItem;
-    return parsed;
+    try {
+      return JSON.parse(aiContent) as ExpenseItem;
+    } catch (e) {
+      throw new Error(`Failed to parse AI output as JSON: ${aiContent}`);
+    }
   } catch (error) {
     console.error('❌ Error processing receipt via AI:', error);
     throw error;
